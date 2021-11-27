@@ -116,8 +116,7 @@ public:
 		switch (ploy())
 		{
 		case PloyType::randomPloy:
-			// return random_action(state);
-			return mcts_action(state);
+			return random_action(state);
 			break;
 		case PloyType::mctsPloy:
 			return mcts_action(state);
@@ -143,7 +142,7 @@ private:
 	{
 		// create_space(state, who, space);
 		// std::cout << who << std::endl;
-		std::shuffle(space.begin(), space.end(), engine);
+		// std::shuffle(space.begin(), space.end(), engine);
 		for (const action::place &move : space)
 		{
 			board after = state;
