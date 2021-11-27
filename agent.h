@@ -221,7 +221,7 @@ private:
 		{
 			if (node->childNodes[i]->nb == 0)
 			{
-				max_v = INT_MAX;
+				max_v = FLT_MIN;
 				max_index = i;
 				break;
 			}
