@@ -176,7 +176,7 @@ private:
 		
 		create_node_leaf(state, who, root);
 		int times_count = 0;
-		while (times_count < 1000)
+		while (times_count < 200)
 		{
 			playOneSequence(state, root);
 			times_count++;
