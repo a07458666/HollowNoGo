@@ -277,8 +277,8 @@ private:
 		if (node->childNodes.size() > 0) return;
 		std::vector<action::place> spaceRound; //(board::size_x * board::size_y);
 		create_space(state, whoRound, spaceRound);
-		auto newSize = std::min((size_t)40, spaceRound.size());
-		spaceRound.resize(newSize);
+		// auto newSize = std::min((size_t)40, spaceRound.size());
+		// spaceRound.resize(newSize);
 		for (const action::place &move : spaceRound)
 		{
 			board after = state;
