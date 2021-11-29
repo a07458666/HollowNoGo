@@ -141,7 +141,7 @@ private:
 	action random_action(const board &state)
 	{
 		// create_space(state, who, space);
-		// std::cout << who << std::endl;
+		std::cout << "random_action" << who << std::endl;
 		// std::shuffle(space.begin(), space.end(), engine);
 		for (const action::place &move : space)
 		{
@@ -154,6 +154,7 @@ private:
 
 	action mcts_action(const board &state)
 	{
+		std::cout << "mcts_action" << who << std::endl;
 		Node root = {0, 0, {}, action::place()};
 		create_node_leaf(state, who, &root);
 		int times_count = 0;

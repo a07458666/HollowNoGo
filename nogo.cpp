@@ -88,8 +88,8 @@ int main(int argc, const char *argv[])
 		summary |= stat.is_finished();
 	}
 
-	player black("name=black ploy=mcts " + black_args + " role=black");
-	player white("name=white ploy=mcts " + white_args + " role=white");
+	player black("name=black ploy=random " + black_args + " role=black");
+	player white("name=white ploy=random " + white_args + " role=white");
 
 	if (!shell)
 	{ // launch standard local games
