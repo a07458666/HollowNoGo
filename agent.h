@@ -116,6 +116,7 @@ public:
 		switch (ploy())
 		{
 		case PloyType::randomPloy:
+			std::cout << "randomPloy" << std::endl;
 			return random_action(state);
 			break;
 		case PloyType::mctsPloy:
