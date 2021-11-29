@@ -18,6 +18,9 @@
 #include "action.h"
 #include <fstream>
 #include <math.h>
+#include <map>
+
+using hclock = std::chrono::high_resolution_clock;
 
 enum PloyType
 {
@@ -29,6 +32,9 @@ struct Node
 {
 	int nb;
 	int value;
+	int nb_rave;
+	int value_rave;
+	int h;
 	std::vector<Node *> childNodes;
 	action::place selectPlace;
 };
@@ -97,7 +103,10 @@ class player : public random_agent
 {
 public:
 	player(const std::string &args = "") : random_agent("name=random role=unknown " + args),
-										   space(board::size_x * board::size_y), who(board::empty)
+										   space(board::size_x * board::size_y),
+										   spaceEmpty(board::size_x * board::size_y),
+										   who(board::empty)
+										   
 	{
 		if (name().find_first_of("[]():; ") != std::string::npos)
 			throw std::invalid_argument("invalid name: " + name());
@@ -108,8 +117,14 @@ public:
 		if (who == board::empty)
 			throw std::invalid_argument("invalid role: " + role());
 		for (size_t i = 0; i < space.size(); i++)
+		{
 			space[i] = action::place(i, who);
-		root = new Node{0, 0, {}, action::place()};
+			spaceEmpty[i] = action::place(i, board::empty);
+			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::black), std::vector<Node *>()));
+			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::white), std::vector<Node *>()));
+		}
+		root = new Node{0, 0, 0, 0, 0, {}, action::place()};
+		board_bk = board();
 	}
 
 	virtual action take_action(const board &state)
@@ -130,8 +145,11 @@ public:
 
 private:
 	std::vector<action::place> space;
+	std::vector<action::place> spaceEmpty;
+	board board_bk;
 	board::piece_type who;
 	Node *root;
+	std::map <action::place, std::vector<Node *> > placeMap; 
 	PloyType ploy() const
 	{
 		if (property("ploy") == "mcts")
@@ -139,6 +157,8 @@ private:
 		else
 			return PloyType::randomPloy;
 	}
+
+	int timeLimit() const { return std::stoi(property("T")); }
 
 	action random_action(const board &state)
 	{
@@ -150,8 +170,6 @@ private:
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				// std::cout << "(x,y)" << move.position().x << "," << move.position().y << std::endl;
-				// std::cout << "who " << move.color() << std::endl;
 				return move;
 			}
 		}
@@ -168,19 +186,26 @@ private:
 				return node->childNodes[i];
 			}
 		}
-		return new Node{0, 0, {}, action::place()};
+		return new Node{0, 0, 0, 0, 0, {}, action::place()};
 	}
+
+	action::place compareBoard(const board &state)
+	{
+		return action();
+	}
+
 	action mcts_action(const board &state)
 	{
 		root = checkIsExist(state, root);
-		
 		create_node_leaf(state, who, root);
 		int times_count = 0;
-		while (times_count < 200)
+		int simulation_count = 1000;
+		hclock::time_point start_time = hclock::now();
+		do
 		{
 			playOneSequence(state, root);
 			times_count++;
-		}
+		} while(times_count < simulation_count && (hclock::now() - start_time) < std::chrono::seconds(timeLimit()));
 		int maxIndex = -1;
 		int maxnb = 0;
 		for (int i = 0; i < root->childNodes.size(); i++)
@@ -220,6 +245,7 @@ private:
 		play_game_by_policy(after, currentWho, nodePath.back());
 		create_node_leaf(after, currentWho, nodePath.back());
 		updateValue(nodePath, nodePath.back()->value);
+		updateVlaueRAVE(nodePath, nodePath.back()->value);
 	}
 	// Selection
 	Node *descendByUCB1(const board &state, Node *node)
@@ -241,8 +267,13 @@ private:
 			}
 			else
 			{
+				float v_rave = 0;
 				float v = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
-				if (v > max_v)
+				if (node->childNodes[i]->nb_rave > 0)
+				{
+					v_rave = (float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave;
+				}	
+				if (v + v_rave > max_v)
 				{
 					max_v = v;
 					max_index = i;
@@ -257,18 +288,24 @@ private:
 	// back propagation
 	void updateValue(std::vector<Node *> nodePath, float v)
 	{
-		float locvalue = v;
 		for (int i = 0; i < nodePath.size() - 1; i++)
 		{
 			nodePath[i]->nb += 1;
-			nodePath[i]->value += locvalue;
-			//locvalue = -locvalue;
+			nodePath[i]->value += v;
 		}
 	}
 
 	void updateVlaueRAVE(std::vector<Node *> nodePath, float v)
 	{
-		
+		for (int i = 0; i < nodePath.size() - 1; i++)
+		{
+			std::vector<Node *> nodes = placeMap[nodePath[i]->selectPlace];
+			for (int j = 0; j < nodes.size(); j++)
+			{
+				nodes[j]->nb +=1;
+				nodes[j]->value += v;
+			}
+		}
 	}
 
 	//
@@ -277,14 +314,13 @@ private:
 		if (node->childNodes.size() > 0) return;
 		std::vector<action::place> spaceRound; //(board::size_x * board::size_y);
 		create_space(state, whoRound, spaceRound);
-		// auto newSize = std::min((size_t)40, spaceRound.size());
-		// spaceRound.resize(newSize);
 		for (const action::place &move : spaceRound)
 		{
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				node->childNodes.emplace_back(new Node{0, 0, {}, move});
+				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
 	}
@@ -343,26 +379,23 @@ private:
 			for (int y = 0; y < board::size_y; y++)
 			{
 				board after = state;
-				if (action::place(x, y, whoFirst).apply(after) == board::legal)
-				{
-					int liberty = 0;
-					if (x < board::size_x - 1 && after[x + 1][y] == board::piece_type::empty)
-						liberty++;
-					if (x > 0 && after[x - 1][y] == board::piece_type::empty)
-						liberty++;
-					if (y < board::size_y - 1 && after[x][y + 1] == board::piece_type::empty)
-						liberty++;
-					if (y > 0 && after[x][y - 1] == board::piece_type::empty)
-						liberty++;
-					if (liberty == 4)
-						spaceSort.emplace_back(action::place(x, y, whoFirst));
-					else if (liberty == 3)
-						best.emplace_back(action::place(x, y, whoFirst));
-					else if (liberty == 2)
-						normal.emplace_back(action::place(x, y, whoFirst));
-					else
-						bad.emplace_back(action::place(x, y, whoFirst));
-				}
+				int liberty = 0;
+				if (x < board::size_x - 1 && after[x + 1][y] == board::piece_type::empty)
+					liberty++;
+				if (x > 0 && after[x - 1][y] == board::piece_type::empty)
+					liberty++;
+				if (y < board::size_y - 1 && after[x][y + 1] == board::piece_type::empty)
+					liberty++;
+				if (y > 0 && after[x][y - 1] == board::piece_type::empty)
+					liberty++;
+				if (liberty == 4)
+					spaceSort.emplace_back(action::place(x, y, whoFirst));
+				else if (liberty == 3)
+					best.emplace_back(action::place(x, y, whoFirst));
+				else if (liberty == 2)
+					normal.emplace_back(action::place(x, y, whoFirst));
+				else
+					bad.emplace_back(action::place(x, y, whoFirst));
 			}
 		}
 		spaceSort.insert(spaceSort.end(), best.begin(), best.end());
