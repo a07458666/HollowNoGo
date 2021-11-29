@@ -141,24 +141,35 @@ private:
 	action random_action(const board &state)
 	{
 		// create_space(state, who, space);
-		std::cout << "random_action" << who << std::endl;
+		// std::cout << "random_action" << who << std::endl;
 		// std::shuffle(space.begin(), space.end(), engine);
 		for (const action::place &move : space)
 		{
 			board after = state;
 			if (move.apply(after) == board::legal)
+			{
+				// std::cout << "(x,y)" << move.position().x << "," << move.position().y << std::endl;
+				// std::cout << "who " << move.color() << std::endl;
 				return move;
+			}
 		}
+		std::cout << "no go?" << std::endl;
 		return action();
 	}
 
 	action mcts_action(const board &state)
 	{
-		std::cout << "mcts_action" << who << std::endl;
+		// std::cout << "mcts_action" << who << std::endl;
 		Node root = {0, 0, {}, action::place()};
 		create_node_leaf(state, who, &root);
+		// std::cout << "=====root move =====" << root.childNodes[0]->selectPlace.color() << std::endl;
+		// board after = state;
+		// root.childNodes[0]->selectPlace.apply(after);
+		// std::cout << state << std::endl;
+		// std::cout << after << std::endl;
+		// std::cout << "==============" << std::endl;
 		int times_count = 0;
-		while (times_count < 500)
+		while (times_count < 1000)
 		{
 			playOneSequence(state, &root);
 			times_count++;
