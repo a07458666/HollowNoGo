@@ -106,10 +106,8 @@ int main(int argc, const char *argv[])
 				action move = who.take_action(game.state());
 				// std::cout << "(x,y)" << move.position().x << "," << move.position().y << std::endl;
 				// std::cout << "who " << move.color() << std::endl;
-				if (game.apply_action(move) != true)
-					break;
-				if (who.check_for_win(game.state()))
-					break;
+				if (game.apply_action(move) != true) break;
+				if (who.check_for_win(game.state())) break;
 				// std::cout << game.state() << std::endl;
 			}
 			agent &win = game.last_turns(black, white);

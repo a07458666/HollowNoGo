@@ -136,6 +136,11 @@ public:
 		return place(p.x, p.y, who);
 	}
 
+	int check_is_who(int x, int y) const {
+		grid test = stone;
+		return test[x][y];
+	}
+
 	/**
 	 * calculate the liberty of the block of piece at [x][y]
 	 * return >= 0 if [x][y] is placed by who; otherwise return -1

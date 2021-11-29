@@ -33,7 +33,7 @@ struct Node
 	action::place selectPlace;
 };
 
-#define FLT_MIN 1.175494351e-38
+#define FLT_MIN -10000000
 
 class agent
 {
@@ -109,6 +109,7 @@ public:
 			throw std::invalid_argument("invalid role: " + role());
 		for (size_t i = 0; i < space.size(); i++)
 			space[i] = action::place(i, who);
+		root = new Node{0, 0, {}, action::place()};
 	}
 
 	virtual action take_action(const board &state)
@@ -116,11 +117,9 @@ public:
 		switch (ploy())
 		{
 		case PloyType::randomPloy:
-			std::cout << "randomPloy" << std::endl;
 			return random_action(state);
 			break;
 		case PloyType::mctsPloy:
-		    std::cout << "mctsPloy" << std::endl;
 			return mcts_action(state);
 			break;
 		default:
@@ -132,6 +131,7 @@ public:
 private:
 	std::vector<action::place> space;
 	board::piece_type who;
+	Node *root;
 	PloyType ploy() const
 	{
 		if (property("ploy") == "mcts")
@@ -144,7 +144,7 @@ private:
 	{
 		// create_space(state, who, space);
 		// std::cout << "random_action" << who << std::endl;
-		// std::shuffle(space.begin(), space.end(), engine);
+		std::shuffle(space.begin(), space.end(), engine);
 		for (const action::place &move : space)
 		{
 			board after = state;
@@ -155,54 +155,55 @@ private:
 				return move;
 			}
 		}
-		std::cout << "no go?" << std::endl;
 		return action();
 	}
 
+	Node * checkIsExist(const board &state, Node *node)
+	{
+		for (int i = 0; i < node->childNodes.size(); i++)
+		{
+			action::place move = node->childNodes[i]->selectPlace;
+			if (state.check_is_who(move.position().x,move.position().y) == move.color())
+			{
+				return node->childNodes[i];
+			}
+		}
+		return new Node{0, 0, {}, action::place()};
+	}
 	action mcts_action(const board &state)
 	{
-		// std::cout << "mcts_action" << who << std::endl;
-		Node root = {0, 0, {}, action::place()};
-		create_node_leaf(state, who, &root);
-		// std::cout << "=====root move =====" << root.childNodes[0]->selectPlace.color() << std::endl;
-		// board after = state;
-		// root.childNodes[0]->selectPlace.apply(after);
-		// std::cout << state << std::endl;
-		// std::cout << after << std::endl;
-		// std::cout << "==============" << std::endl;
+		root = checkIsExist(state, root);
+		
+		create_node_leaf(state, who, root);
 		int times_count = 0;
 		while (times_count < 1000)
 		{
-			playOneSequence(state, &root);
+			playOneSequence(state, root);
 			times_count++;
 		}
 		int maxIndex = -1;
 		int maxnb = 0;
-		// std::cout << "===========START===========" << std::endl;
-		// std::cout << state << std::endl;
-		for (int i = 0; i < root.childNodes.size(); i++)
+		for (int i = 0; i < root->childNodes.size(); i++)
 		{
-			if (root.childNodes[i]->nb > maxnb)
+			if (root->childNodes[i]->nb > maxnb)
 			{
-				// board after = state;
-				// root.childNodes[i]->selectPlace.apply(after);
-				// std::cout << "nb " << root.childNodes[i]->nb << std::endl;
-				// std::cout << "(x,y)" << root.childNodes[i]->selectPlace.position().x << "," << root.childNodes[i]->selectPlace.position().y << std::endl;
-				// std::cout << after << std::endl;
-				maxnb = root.childNodes[i]->nb;
+				maxnb = root->childNodes[i]->nb;
 				maxIndex = i;
 			}
 		}
 		if (maxIndex != -1)
-			return root.childNodes[maxIndex]->selectPlace;
+		{
+			root = root->childNodes[maxIndex];
+			return root->selectPlace;
+		}		
 		return action();
 	}
 
 	// One Simulation
-	void playOneSequence(const board &state, Node *rootNode)
+	void playOneSequence(const board &state, Node *node)
 	{
 		std::vector<Node *> nodePath;
-		nodePath.emplace_back(rootNode);
+		nodePath.emplace_back(node);
 		int index = 0;
 		board after = state;
 		board::piece_type currentWho = who;
@@ -218,7 +219,7 @@ private:
 		}
 		play_game_by_policy(after, currentWho, nodePath.back());
 		create_node_leaf(after, currentWho, nodePath.back());
-		updateValue(nodePath, -nodePath.back()->value);
+		updateValue(nodePath, nodePath.back()->value);
 	}
 	// Selection
 	Node *descendByUCB1(const board &state, Node *node)
@@ -235,13 +236,12 @@ private:
 		{
 			if (node->childNodes[i]->nb == 0)
 			{
-				max_v = FLT_MIN;
 				max_index = i;
 				break;
 			}
 			else
 			{
-				float v = (-node->childNodes[i]->value / node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
+				float v = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
 				if (v > max_v)
 				{
 					max_v = v;
@@ -262,43 +262,34 @@ private:
 		{
 			nodePath[i]->nb += 1;
 			nodePath[i]->value += locvalue;
-			locvalue = -locvalue;
+			//locvalue = -locvalue;
 		}
 	}
 
 	//
 	void create_node_leaf(const board &state, board::piece_type whoRound, Node *node)
 	{
-		// std::vector<action::place> spaceRound(board::size_x * board::size_y);
-		// for (size_t i = 0; i < spaceRound.size(); i++)
-		// 	spaceRound[i] = action::place(i, whoRound);
+		if (node->childNodes.size() > 0) return;
 		std::vector<action::place> spaceRound; //(board::size_x * board::size_y);
 		create_space(state, whoRound, spaceRound);
 		auto newSize = std::min((size_t)20, spaceRound.size());
 		spaceRound.resize(newSize);
-		// std::shuffle(spaceRound.begin(), spaceRound.end(), engine);
-		// std::cout << "==========BEGIN===========" << std::endl;
-		// std::cout << "whoRound" << whoRound << std::endl;
-		// std::cout << state << std::endl;
-		// std::cout << "==========ALL IN===========" << std::endl;
 		for (const action::place &move : spaceRound)
 		{
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				// std::cout << "(x,y)" << move.position().x << "," << move.position().y << std::endl;
 				node->childNodes.emplace_back(new Node{0, 0, {}, move});
 				// std::cout << after << std::endl;
 			}
 		}
-		// std::cout << "==========END===========" << std::endl;
 	}
 
 	//
 	void play_game_by_policy(const board &state, board::piece_type whoFirst, Node *node)
 	{
 		board::piece_type whoWin = play(state, whoFirst);
-		if (whoWin == board::black)
+		if (whoWin == who)
 			node->value = 1;
 		else
 			node->value = 0;
