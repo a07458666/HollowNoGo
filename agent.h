@@ -35,7 +35,7 @@ struct Node
 	int value;
 	int nb_rave;
 	int value_rave;
-	int h;
+	float h;
 	std::vector<Node *> childNodes;
 	action::place selectPlace;
 };
@@ -273,10 +273,12 @@ private:
 				if (node->childNodes[i]->nb_rave > 0)
 				{
 					v_rave = (float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave;
+					// std::cout << "v_rave = " << v_rave << ",  value_rave = " <<  node->childNodes[i]->value_rave << ",  nb_rave = " << node->childNodes[i]->nb_rave << std::endl;
 				}	
-				if (v + v_rave > max_v)
+				if (v + v_rave + node->childNodes[i]->h > max_v)
 				{
-					max_v = v;
+					// std::cout << "v = " << v << ",  v_rave = " <<  v_rave << ",  h = " << node->childNodes[i]->h << std::endl;
+					max_v = v + v_rave + node->childNodes[i]->h;
 					max_index = i;
 				}
 			}
@@ -298,13 +300,14 @@ private:
 
 	void updateVlaueRAVE(std::vector<Node *> nodePath, float v)
 	{
-		for (int i = 0; i < nodePath.size() - 1; i++)
+		if (nodePath.size() < 2) return;
+		for (int i = 1; i < nodePath.size(); i++)
 		{
 			std::vector<Node *> nodes = placeMap[nodePath[i]->selectPlace];
 			for (int j = 0; j < nodes.size(); j++)
 			{
-				nodes[j]->nb +=1;
-				nodes[j]->value += v;
+				nodes[j]->nb_rave +=1;
+				nodes[j]->value_rave += v;
 			}
 		}
 	}
@@ -320,7 +323,8 @@ private:
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				float liberty = get_liberty(state, move.position().x, move.position().y);
+				node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / 8, {}, move});
 				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
@@ -379,16 +383,7 @@ private:
 		{
 			for (int y = 0; y < board::size_y; y++)
 			{
-				board after = state;
-				int liberty = 0;
-				if (x < board::size_x - 1 && after[x + 1][y] == board::piece_type::empty)
-					liberty++;
-				if (x > 0 && after[x - 1][y] == board::piece_type::empty)
-					liberty++;
-				if (y < board::size_y - 1 && after[x][y + 1] == board::piece_type::empty)
-					liberty++;
-				if (y > 0 && after[x][y - 1] == board::piece_type::empty)
-					liberty++;
+				int liberty = get_liberty(state, x, y);
 				if (liberty == 4)
 					spaceSort.emplace_back(action::place(x, y, whoFirst));
 				else if (liberty == 3)
@@ -402,5 +397,20 @@ private:
 		spaceSort.insert(spaceSort.end(), best.begin(), best.end());
 		spaceSort.insert(spaceSort.end(), normal.begin(), normal.end());
 		spaceSort.insert(spaceSort.end(), bad.begin(), bad.end());
+	}
+
+	int get_liberty(const board &state, int x, int y)
+	{
+		int liberty = 0;
+		board after = state;
+		if (x < board::size_x - 1 && after[x + 1][y] == board::piece_type::empty)
+			liberty++;
+		if (x > 0 && after[x - 1][y] == board::piece_type::empty)
+			liberty++;
+		if (y < board::size_y - 1 && after[x][y + 1] == board::piece_type::empty)
+			liberty++;
+		if (y > 0 && after[x][y - 1] == board::piece_type::empty)
+			liberty++;
+		return liberty;
 	}
 };
