@@ -103,7 +103,7 @@ int main(int argc, const char *argv[])
 			while (true)
 			{
 				agent &who = game.take_turns(black, white);
-				action::place move = who.take_action(game.state());
+				action move = who.take_action(game.state());
 				// std::cout << "(x,y)" << move.position().x << "," << move.position().y << std::endl;
 				// std::cout << "who " << move.color() << std::endl;
 				if (game.apply_action(move) != true)
