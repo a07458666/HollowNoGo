@@ -266,13 +266,18 @@ private:
 		}
 	}
 
+	void updateVlaueRAVE(std::vector<Node *> nodePath, float v)
+	{
+		
+	}
+
 	//
 	void create_node_leaf(const board &state, board::piece_type whoRound, Node *node)
 	{
 		if (node->childNodes.size() > 0) return;
 		std::vector<action::place> spaceRound; //(board::size_x * board::size_y);
 		create_space(state, whoRound, spaceRound);
-		auto newSize = std::min((size_t)20, spaceRound.size());
+		auto newSize = std::min((size_t)40, spaceRound.size());
 		spaceRound.resize(newSize);
 		for (const action::place &move : spaceRound)
 		{
@@ -280,7 +285,6 @@ private:
 			if (move.apply(after) == board::legal)
 			{
 				node->childNodes.emplace_back(new Node{0, 0, {}, move});
-				// std::cout << after << std::endl;
 			}
 		}
 	}
