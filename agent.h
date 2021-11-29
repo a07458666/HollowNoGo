@@ -119,6 +119,7 @@ public:
 			return random_action(state);
 			break;
 		case PloyType::mctsPloy:
+		    std::cout << "mctsPloy" << std::endl;
 			return mcts_action(state);
 			break;
 		default:
