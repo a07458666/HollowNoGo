@@ -20,8 +20,7 @@
 #include <math.h>
 #include <map>
 
-using hclock = std::chrono::high_resolution_clock;
-
+using namespace std::chrono;
 enum PloyType
 {
 	randomPloy,
@@ -200,12 +199,12 @@ private:
 		create_node_leaf(state, who, root);
 		int times_count = 0;
 		int simulation_count = 1000;
-		hclock::time_point start_time = hclock::now();
+		high_resolution_clock::time_point start_time = high_resolution_clock::now();
 		do
 		{
 			playOneSequence(state, root);
 			times_count++;
-		} while(times_count < simulation_count && (hclock::now() - start_time) < std::chrono::seconds(timeLimit()));
+		} while(times_count < simulation_count && (high_resolution_clock::now() - start_time) < std::chrono::seconds(timeLimit()));
 		int maxIndex = -1;
 		int maxnb = 0;
 		for (int i = 0; i < root->childNodes.size(); i++)
