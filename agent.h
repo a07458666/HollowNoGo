@@ -342,8 +342,9 @@ private:
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				float liberty = get_liberty(state, move.position().x, move.position().y);
-				node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
+				// float liberty = get_liberty(state, move.position().x, move.position().y);
+				// node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
+				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
 				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
