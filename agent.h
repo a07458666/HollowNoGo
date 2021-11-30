@@ -202,11 +202,15 @@ private:
 		int times_count = 0;
 		int simulation_count = 1000;
 		hclock::time_point start_time = hclock::now();
+		hclock::time_point end_time = start_time;
+		// std::cout << "===timeLimit===" << std::chrono::milliseconds(timeLimit()).count() << std::endl;
 		do
 		{
 			playOneSequence(state, root);
 			times_count++;
-		} while(times_count < simulation_count && (hclock::now() - start_time) < std::chrono::seconds(timeLimit()));
+			end_time = hclock::now();
+		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
+		// std::cout << "===TIME===" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << std::endl;
 		int maxIndex = -1;
 		int maxnb = 0;
 		for (int i = 0; i < root->childNodes.size(); i++)
