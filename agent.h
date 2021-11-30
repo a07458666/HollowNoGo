@@ -105,7 +105,6 @@ class player : public random_agent
 public:
 	player(const std::string &args = "") : random_agent("name=random role=unknown " + args),
 										   space(board::size_x * board::size_y),
-										   spaceEmpty(board::size_x * board::size_y),
 										   who(board::empty)
 										   
 	{
@@ -120,7 +119,6 @@ public:
 		for (size_t i = 0; i < space.size(); i++)
 		{
 			space[i] = action::place(i, who);
-			spaceEmpty[i] = action::place(i, board::empty);
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::black), std::vector<Node *>()));
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::white), std::vector<Node *>()));
 		}
@@ -146,7 +144,6 @@ public:
 
 private:
 	std::vector<action::place> space;
-	std::vector<action::place> spaceEmpty;
 	board board_bk;
 	board::piece_type who;
 	Node *root;
@@ -163,8 +160,6 @@ private:
 
 	action random_action(const board &state)
 	{
-		// create_space(state, who, space);
-		// std::cout << "random_action" << who << std::endl;
 		std::shuffle(space.begin(), space.end(), engine);
 		for (const action::place &move : space)
 		{
@@ -187,6 +182,7 @@ private:
 				return node->childNodes[i];
 			}
 		}
+		deleteTree();
 		return new Node{0, 0, 0, 0, 0, {}, action::place()};
 	}
 
@@ -209,8 +205,8 @@ private:
 			playOneSequence(state, root);
 			times_count++;
 			end_time = hclock::now();
+			
 		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
-		// std::cout << "===TIME===" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << std::endl;
 		int maxIndex = -1;
 		int maxnb = 0;
 		for (int i = 0; i < root->childNodes.size(); i++)
@@ -250,7 +246,7 @@ private:
 		play_game_by_policy(after, currentWho, nodePath.back());
 		create_node_leaf(after, currentWho, nodePath.back());
 		updateValue(nodePath, nodePath.back()->value);
-		updateVlaueRAVE(nodePath, nodePath.back()->value);
+		// updateVlaueRAVE(nodePath, nodePath.back()->value);
 	}
 	// Selection
 	Node *descendByUCB1(const board &state, Node *node)
@@ -261,34 +257,50 @@ private:
 			nb += currentNode->nb;
 		}
 
-		float max_v = FLT_MIN;
-		float max_index = 0;
+		std::vector<float> QList = std::vector<float>(node->childNodes.size());
+		int max_index = 0;
+		float max_Q = FLT_MIN;
+		int min_index = 0;
+		float min_Q = 1000000;
 		for (int i = 0; i < node->childNodes.size(); i++)
 		{
+			float Q = 0;
+			float Q_rave = 0;
+			float exploration = 0;
+			float beta = 0.0;
+			
 			if (node->childNodes[i]->nb == 0)
 			{
-				max_index = i;
-				break;
+				return node->childNodes[i];
 			}
 			else
 			{
-				float v_rave = 0;
-				float v = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
-				if (node->childNodes[i]->nb_rave > 0)
-				{
-					v_rave = (float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave;
-					// std::cout << "v_rave = " << v_rave << ",  value_rave = " <<  node->childNodes[i]->value_rave << ",  nb_rave = " << node->childNodes[i]->nb_rave << std::endl;
-				}	
-				if (v + v_rave + node->childNodes[i]->h > max_v)
-				{
-					// std::cout << "v = " << v << ",  v_rave = " <<  v_rave << ",  h = " << node->childNodes[i]->h << std::endl;
-					max_v = v + v_rave + node->childNodes[i]->h;
-					max_index = i;
-				}
+				Q = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb);
+				exploration = sqrt(2 * log(nb) / node->childNodes[i]->nb);
+			}
+			if (node->childNodes[i]->nb_rave > 0)
+			{
+				Q_rave = ((float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave);
+			}
+			float Q_star = Q * (1.0 - beta) + (Q_rave * beta) + exploration + node->childNodes[i]->h;
+			// std::cout << "Q_star = " << Q_star << ", Q = " << Q << ",(1 - beta) = " << (1 - beta) << ",Q_rave = " << Q_rave << ", (Q_rave * beta) = " << (Q_rave * beta) << ", exploration = " << exploration << std::endl;
+			if (Q_star > max_Q){
+				max_Q = Q_star;
+				max_index = i;
+			}
+			if (Q_star < min_Q){
+				min_Q = Q_star;
+				min_index = i;
 			}
 		}
-		// std::cout << "max_index " << max_index << std::endl;
-		// std::cout << "node->childNodes.size() " << node->childNodes.size() << std::endl;
+		if (node->childNodes[0]->selectPlace.color() == who)
+		{
+			return node->childNodes[max_index];	
+		}
+		else 
+		{
+			return node->childNodes[min_index];
+		}
 		return node->childNodes[max_index];
 	}
 
@@ -314,14 +326,6 @@ private:
 			{
 				nodes[j]->nb_rave +=1;
 				nodes[j]->value_rave += v;
-				// if (nodePath[i]->selectPlace.color() == who)
-				// {
-				// 	nodes[j]->value_rave -= v;
-				// }
-				// else
-				// {
-				// 	nodes[j]->value_rave += v;
-				// }
 			}
 		}
 	}
@@ -338,7 +342,7 @@ private:
 			if (move.apply(after) == board::legal)
 			{
 				float liberty = get_liberty(state, move.position().x, move.position().y);
-				node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / 8, {}, move});
+				node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
 				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
@@ -360,32 +364,46 @@ private:
 		board::piece_type whoRound = whoFirst;
 		board after = state;
 		action::place move;
+
+		std::vector<action::place> spaceA, spaceB;
+		board::piece_type p1 = whoFirst;
+		board::piece_type p2 = board::black;
+		if (p1 == board::black)
+		{
+			p2 = board::white;
+		}
+		create_space(state, p1, spaceA);
+		create_space(state, p2, spaceB);
+		std::reverse(spaceA.begin(), spaceA.end());
+		std::reverse(spaceB.begin(), spaceB.end());
 		do
 		{
-			move = playOneHand(after, whoRound);
-			move.apply(after);
-			if (whoRound == board::black)
-				whoRound = board::white;
-			else
-				whoRound = board::black;
-		} while (move != -1u);
-		return whoRound;
-	}
-
-	action playOneHand(const board &state, board::piece_type whoFirst)
-	{
-		std::vector<action::place> spaceRound;
-		create_space(state, whoFirst, spaceRound);
-		for (const action::place &move : spaceRound)
-		{
-			board after = state;
-			if (move.apply(after) == board::legal)
+			while(!spaceA.empty())
 			{
-				// std::cout << after << std::endl;
-				return move;
+				action::place move = spaceA.back();
+				if (move.apply(after) == board::legal)
+				{
+					spaceA.pop_back();
+					break;
+				}
+				spaceA.pop_back();
 			}
-		}
-		return action();
+			while(!spaceB.empty())
+			{
+				action::place move = spaceB.back();
+				if (move.apply(after) == board::legal)
+				{
+					spaceB.pop_back();
+					break;
+				}
+				spaceB.pop_back();
+			}
+		} while (!spaceA.empty() && !spaceB.empty());
+		if (spaceA.empty())
+			whoRound = p2;
+		else
+			whoRound = p1;
+		return whoRound;
 	}
 
 	void create_space(const board &state, board::piece_type whoFirst, std::vector<action::place> &spaceSort)
@@ -408,6 +426,9 @@ private:
 					bad.emplace_back(action::place(x, y, whoFirst));
 			}
 		}
+		std::shuffle(best.begin(), best.end(), engine);
+		std::shuffle(normal.begin(), normal.end(), engine);
+		std::shuffle(bad.begin(), bad.end(), engine);
 		spaceSort.insert(spaceSort.end(), best.begin(), best.end());
 		spaceSort.insert(spaceSort.end(), normal.begin(), normal.end());
 		spaceSort.insert(spaceSort.end(), bad.begin(), bad.end());
@@ -426,5 +447,18 @@ private:
 		if (y > 0 && after[x][y - 1] == board::piece_type::empty)
 			liberty++;
 		return liberty;
+	}
+
+	void deleteTree()
+	{
+		std::map <action::place, std::vector<Node *> >::iterator iter;
+		for(auto &iter: placeMap)
+		{
+			for (auto &node: iter.second)
+			{
+				delete node;	
+			}
+		} 
+		placeMap.clear();
 	}
 };
