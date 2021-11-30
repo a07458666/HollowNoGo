@@ -246,7 +246,7 @@ private:
 		play_game_by_policy(after, currentWho, nodePath.back());
 		create_node_leaf(after, currentWho, nodePath.back());
 		updateValue(nodePath, nodePath.back()->value);
-		// updateVlaueRAVE(nodePath, nodePath.back()->value);
+		updateVlaueRAVE(nodePath, nodePath.back()->value);
 	}
 	// Selection
 	Node *descendByUCB1(const board &state, Node *node)
@@ -267,7 +267,7 @@ private:
 			float Q = 0;
 			float Q_rave = 0;
 			float exploration = 0;
-			float beta = 0.0;
+			float beta = 0.5;
 			
 			if (node->childNodes[i]->nb == 0)
 			{
