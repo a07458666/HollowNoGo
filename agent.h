@@ -200,7 +200,7 @@ private:
 		root = checkIsExist(state, root);
 		create_node_leaf(state, who, root);
 		int times_count = 0;
-		int simulation_count = 1000;
+		int simulation_count = 10000;
 		hclock::time_point start_time = hclock::now();
 		hclock::time_point end_time = start_time;
 		// std::cout << "===timeLimit===" << std::chrono::milliseconds(timeLimit()).count() << std::endl;
