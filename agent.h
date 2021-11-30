@@ -193,6 +193,10 @@ private:
 
 	action mcts_action(const board &state)
 	{
+		if (state == board())
+		{
+			deleteTree();
+		}
 		root = checkIsExist(state, root);
 		create_node_leaf(state, who, root);
 		int times_count = 0;
