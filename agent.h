@@ -177,7 +177,8 @@ private:
 		for (int i = 0; i < node->childNodes.size(); i++)
 		{
 			action::place move = node->childNodes[i]->selectPlace;
-			if (state.check_is_who(move.position().x,move.position().y) == move.color())
+			if (state.check_is_who(move.position().x,move.position().y) == move.color() &&
+			    state.check_is_who(node->selectPlace.position().x, node->selectPlace.position().y) == node->selectPlace.color())
 			{
 				return node->childNodes[i];
 			}
@@ -193,10 +194,6 @@ private:
 
 	action mcts_action(const board &state)
 	{
-		if (state == board())
-		{
-			deleteTree();
-		}
 		root = checkIsExist(state, root);
 		create_node_leaf(state, who, root);
 		int times_count = 0;
