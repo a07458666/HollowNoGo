@@ -249,8 +249,8 @@ private:
 		}
 		play_game_by_policy(after, currentWho, nodePath.back());
 		create_node_leaf(after, currentWho, nodePath.back());
-		updateValue(nodePath, -nodePath.back()->value);
-		updateVlaueRAVE(nodePath, -nodePath.back()->value);
+		updateValue(nodePath, nodePath.back()->value);
+		updateVlaueRAVE(nodePath, nodePath.back()->value);
 	}
 	// Selection
 	Node *descendByUCB1(const board &state, Node *node)
@@ -273,10 +273,10 @@ private:
 			else
 			{
 				float v_rave = 0;
-				float v = (-(float)node->childNodes[i]->value / (float)node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
+				float v = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb) + (sqrt(2 * log(nb) / node->childNodes[i]->nb));
 				if (node->childNodes[i]->nb_rave > 0)
 				{
-					v_rave = -(float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave;
+					v_rave = (float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave;
 					// std::cout << "v_rave = " << v_rave << ",  value_rave = " <<  node->childNodes[i]->value_rave << ",  nb_rave = " << node->childNodes[i]->nb_rave << std::endl;
 				}	
 				if (v + v_rave + node->childNodes[i]->h > max_v)
@@ -300,7 +300,7 @@ private:
 		{
 			nodePath[i]->nb += 1;
 			nodePath[i]->value += value;
-			value = -value; 
+			//value = -value; 
 		}
 	}
 
@@ -313,14 +313,15 @@ private:
 			for (int j = 0; j < nodes.size(); j++)
 			{
 				nodes[j]->nb_rave +=1;
-				if (nodePath[i]->selectPlace.color() == who)
-				{
-					nodes[j]->value_rave -= v;
-				}
-				else
-				{
-					nodes[j]->value_rave += v;
-				}
+				nodes[j]->value_rave += v;
+				// if (nodePath[i]->selectPlace.color() == who)
+				// {
+				// 	nodes[j]->value_rave -= v;
+				// }
+				// else
+				// {
+				// 	nodes[j]->value_rave += v;
+				// }
 			}
 		}
 	}
