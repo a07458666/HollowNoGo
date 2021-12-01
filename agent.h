@@ -20,6 +20,7 @@
 #include <math.h>
 #include <map>
 #include <chrono>
+#include <thread>
 
 using hclock = std::chrono::high_resolution_clock;
 
@@ -123,7 +124,6 @@ public:
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::white), std::vector<Node *>()));
 		}
 		root = new Node{0, 0, 0, 0, 0, {}, action::place()};
-		board_bk = board();
 	}
 
 	virtual action take_action(const board &state)
@@ -131,10 +131,13 @@ public:
 		switch (ploy())
 		{
 		case PloyType::randomPloy:
-			return random_action(state);
+			finalAction = random_action(state);
+			std::cout << "random ??" << std::endl;
+			return finalAction;
 			break;
 		case PloyType::mctsPloy:
-			return mcts_action(state);
+			finalAction = mcts_action(state);
+			return finalAction;
 			break;
 		default:
 			break;
@@ -142,12 +145,13 @@ public:
 		return action();
 	}
 
-private:
-	std::vector<action::place> space;
-	board board_bk;
-	board::piece_type who;
-	Node *root;
-	std::map <action::place, std::vector<Node *> > placeMap; 
+	virtual void open_episode(const std::string &flag = "") {
+		root = new Node{0, 0, 0, 0, 0, {}, action::place()};
+	}
+
+	virtual void close_episode(const std::string &flag = "") {
+		deleteTree();
+	}
 	PloyType ploy() const
 	{
 		if (property("ploy") == "mcts")
@@ -155,6 +159,53 @@ private:
 		else
 			return PloyType::randomPloy;
 	}
+	action mcts_action(const board &state)
+	{
+		root = checkIsExist(state, root);
+		create_node_leaf(state, who, root);
+		int times_count = 0;
+		int simulation_count = 10000;
+		hclock::time_point start_time = hclock::now();
+		hclock::time_point end_time = start_time;
+		// std::cout << "===timeLimit===" << std::chrono::milliseconds(timeLimit()).count() << std::endl;
+		do
+		{
+			playOneSequence(state, root);
+			times_count++;
+			end_time = hclock::now();
+			
+		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
+		// std::cout << "times_count : " << times_count << std::endl;
+		int maxIndex = -1;
+		int maxnb = 0;
+		for (int i = 0; i < root->childNodes.size(); i++)
+		{
+			if (root->childNodes[i]->nb > maxnb)
+			{
+				maxnb = root->childNodes[i]->nb;
+				maxIndex = i;
+			}
+		}
+		if (maxIndex != -1)
+		{
+			root = root->childNodes[maxIndex];
+			finalNb = root->nb;
+			return root->selectPlace;
+		}		
+		return action();
+	}
+
+	action::place getFinalAction() {return finalAction;};
+	int getFinalNb() {return finalNb;};
+
+protected:
+	std::vector<action::place> space;
+	board::piece_type who;
+	Node *root;
+	std::map <action::place, std::vector<Node *> > placeMap; 
+	action::place finalAction;
+	int finalNb;
+
 
 	int timeLimit() const { return std::stoi(property("T")); }
 
@@ -189,40 +240,6 @@ private:
 
 	action::place compareBoard(const board &state)
 	{
-		return action();
-	}
-
-	action mcts_action(const board &state)
-	{
-		root = checkIsExist(state, root);
-		create_node_leaf(state, who, root);
-		int times_count = 0;
-		int simulation_count = 10000;
-		hclock::time_point start_time = hclock::now();
-		hclock::time_point end_time = start_time;
-		// std::cout << "===timeLimit===" << std::chrono::milliseconds(timeLimit()).count() << std::endl;
-		do
-		{
-			playOneSequence(state, root);
-			times_count++;
-			end_time = hclock::now();
-			
-		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
-		int maxIndex = -1;
-		int maxnb = 0;
-		for (int i = 0; i < root->childNodes.size(); i++)
-		{
-			if (root->childNodes[i]->nb > maxnb)
-			{
-				maxnb = root->childNodes[i]->nb;
-				maxIndex = i;
-			}
-		}
-		if (maxIndex != -1)
-		{
-			root = root->childNodes[maxIndex];
-			return root->selectPlace;
-		}		
 		return action();
 	}
 
@@ -463,4 +480,76 @@ private:
 		} 
 		placeMap.clear();
 	}
+};
+
+class player_thread : public random_agent
+{
+public:
+	player_thread(const std::string &args = "") : random_agent("name=random role=unknown " + args)
+	{
+		for (int i = 0; i < threadNum; i++)
+			players.emplace_back(new player(args));
+	}
+	~player_thread()
+	{
+		for (auto &player: players)
+		{
+			delete player;
+		}
+		players.clear();
+	}
+
+	virtual action take_action(const board &state)
+	{
+		std::map<action, int> moveCount;
+		std::vector<std::thread> vecOfThreads;
+		for (auto player: players)
+		{
+			vecOfThreads.emplace_back(std::thread(&player::take_action, player, state));
+		}
+		for (auto &th: vecOfThreads)
+		{
+			th.join();
+		}
+
+		for (auto player: players)
+		{
+			action move = player->getFinalAction();
+			int move_nb = player->getFinalNb();
+			if (moveCount.find(move) == moveCount.end())
+			{
+				
+				moveCount.insert(std::pair<action,int>(move, move_nb));
+			}
+			else
+			{
+				moveCount[move] += move_nb;
+			}
+		}
+		int max_value = 0;
+		action max_move = action();
+		std::map<action, int>::iterator currentEntry;
+		for (currentEntry = moveCount.begin(); currentEntry != moveCount.end(); ++currentEntry) {
+			if (currentEntry->second > max_value)
+			{
+				max_move = currentEntry->first;
+			}
+		}
+		return max_move;
+		return action();
+	}
+
+	virtual void close_episode(const std::string &flag = "") 
+	{
+		for (auto& p : players)
+			p->close_episode();
+	}
+	virtual void open_episode(const std::string &flag = "") {
+		for (auto& p : players)
+			p->open_episode();
+	}
+	
+	private:
+		std::vector<player *> players;
+		int threadNum = 16;
 };
