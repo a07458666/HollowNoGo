@@ -130,6 +130,9 @@ public:
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::white), std::vector<Node *>()));
 		}
 	}
+	// virtual void close_episode(const std::string &flag = "") {
+	// 	deleteNode(root);
+	// }
 	virtual action take_action(const board &state)
 	{
 		switch (ploy())
@@ -186,11 +189,12 @@ private:
 			if (state.check_is_who(move.position().x,move.position().y) == move.color() &&
 			    state.check_is_who(node->selectPlace.position().x, node->selectPlace.position().y) == node->selectPlace.color())
 			{
+				deleteOther(node, move);
 				return node->childNodes[i];
 			}
 		}
 		deleteNode(root);
-		return new Node{0, 0, 0, 0, 0, {}, action::place()};
+		return root;
 	}
 
 	action::place compareBoard(const board &state)
@@ -220,7 +224,7 @@ private:
 			end_time = hclock::now();
 			
 		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
-		// std::cout << "times :" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()  << "count "  << times_count << std::endl;
+		std::cout << "times :" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()  << "count "  << times_count << std::endl;
 		// std::cout << "times while :" << allTime["while"] << std::endl;
 		// std::cout << "times play_game_by_policy" << allTime["play_game_by_policy"] << std::endl;
 		// std::cout << "times create_node_leaf :" << allTime["create_node_leaf"] << std::endl;
@@ -239,6 +243,7 @@ private:
 		}
 		if (maxIndex != -1)
 		{
+			deleteOther(root, root->childNodes[maxIndex]->selectPlace);
 			root = root->childNodes[maxIndex];
 			return root->selectPlace;
 		}	
@@ -253,7 +258,6 @@ private:
 		int index = 0;
 		board after = state;
 		board::piece_type currentWho = who;
-		hclock::time_point start_time = hclock::now();
 		while (nodePath.back()->childNodes.size() != 0)
 		{
 			nodePath.emplace_back(descendByUCB1(after, nodePath.back()));
@@ -498,6 +502,18 @@ private:
 				delete p;
 			} 
 			node->childNodes.clear();
+		}
+	}
+
+	void deleteOther(Node *node, action::place selectPlace)
+	{
+		if(node != nullptr){
+			for(size_t i = 0; i < node->childNodes.size(); i++){
+				if (node->childNodes[i]->selectPlace != selectPlace)
+				{
+					deleteNode(node->childNodes[i]);
+				}
+			}
 		}
 	}
 };
