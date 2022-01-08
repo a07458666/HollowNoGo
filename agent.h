@@ -241,7 +241,7 @@ private:
 		{
 			root = root->childNodes[maxIndex];
 			return root->selectPlace;
-		}		
+		}	
 		return action();
 	}
 
@@ -488,12 +488,16 @@ private:
 	// }
 
 	void deleteNode(Node *node){
-		if(node != nullptr){			
+		if(node != nullptr){
 			for(size_t i = 0; i < node->childNodes.size(); i++){
 				deleteNode(node->childNodes[i]);
 			}
 			if(node->childNodes.size() == 0) return;
-			delete[] &node->childNodes;
+			for (auto p : node->childNodes)
+			{
+				delete p;
+			} 
+			node->childNodes.clear();
 		}
 	}
 };
