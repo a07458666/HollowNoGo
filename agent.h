@@ -274,26 +274,16 @@ private:
 			{
 				return node->childNodes[i];
 			}
-			// else
-			// {
-			// 	Q = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb);
-			// 	exploration = sqrt(2 * log(nb) / node->childNodes[i]->nb);
-			// }
-			// if (node->childNodes[i]->nb_rave > 0)
-			// {
-			// 	Q_rave = ((float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave);
-			// }
-			// float Q_star = 0;
-			// if (testId() == 1)
-			// {
-			// 	Q_star = (((float)node->childNodes[i]->value + (float)node->childNodes[i]->value_rave) + std::sqrt(log(nb) * node->childNodes[i]->nb) * 0.25f) / ((float)node->childNodes[i]->nb_rave + node->childNodes[i]->nb);
-			// }
-			// else
-			// {
-			// 	Q_star = Q * (1.0 - beta) + (Q_rave * beta) + exploration + node->childNodes[i]->h;
-			// }
-			float Q_star = (((float)node->childNodes[i]->value + (float)node->childNodes[i]->value_rave) + std::sqrt(log(nb) * node->childNodes[i]->nb) * 0.25f) / ((float)node->childNodes[i]->nb_rave + node->childNodes[i]->nb) + node->childNodes[i]->h;
-
+			else
+			{
+				Q = ((float)node->childNodes[i]->value / (float)node->childNodes[i]->nb);
+				exploration = sqrt(2 * log(nb) / node->childNodes[i]->nb);
+			}
+			if (node->childNodes[i]->nb_rave > 0)
+			{
+				Q_rave = ((float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave);
+			}
+			float Q_star = Q * (1.0 - beta) + (Q_rave * beta) + exploration + node->childNodes[i]->h;
 			// std::cout << "Q_star = " << Q_star << ", Q = " << Q << ",(1 - beta) = " << (1 - beta) << ",Q_rave = " << Q_rave << ", (Q_rave * beta) = " << (Q_rave * beta) << ", exploration = " << exploration << std::endl;
 			if (Q_star > max_Q){
 				max_Q = Q_star;
