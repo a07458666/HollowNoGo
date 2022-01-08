@@ -224,7 +224,7 @@ private:
 			end_time = hclock::now();
 			
 		} while(times_count < simulation_count && std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() < std::chrono::milliseconds(timeLimit()).count());
-		std::cout << "times :" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()  << "count "  << times_count << std::endl;
+		// std::cout << "times :" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count()  << "count "  << times_count << std::endl;
 		// std::cout << "times while :" << allTime["while"] << std::endl;
 		// std::cout << "times play_game_by_policy" << allTime["play_game_by_policy"] << std::endl;
 		// std::cout << "times create_node_leaf :" << allTime["create_node_leaf"] << std::endl;
