@@ -419,32 +419,62 @@ private:
 		return whoRound;
 	}
 
+	// void create_space(const board &state, board::piece_type whoFirst, std::vector<action::place> &spaceSort)
+	// {
+	// 	std::vector<action::place> best;
+	// 	std::vector<action::place> normal;
+	// 	std::vector<action::place> bad;
+	// 	for (int x = 0; x < board::size_x; x++)
+	// 	{
+	// 		for (int y = 0; y < board::size_y; y++)
+	// 		{
+	// 			int liberty = get_liberty(state, x, y);
+	// 			if (liberty == 4)
+	// 				spaceSort.emplace_back(action::place(x, y, whoFirst));
+	// 			else if (liberty == 3)
+	// 				best.emplace_back(action::place(x, y, whoFirst));
+	// 			else if (liberty == 2)
+	// 				normal.emplace_back(action::place(x, y, whoFirst));
+	// 			else
+	// 				bad.emplace_back(action::place(x, y, whoFirst));
+	// 		}
+	// 	}
+	// 	std::shuffle(best.begin(), best.end(), engine);
+	// 	std::shuffle(normal.begin(), normal.end(), engine);
+	// 	std::shuffle(bad.begin(), bad.end(), engine);
+	// 	spaceSort.insert(spaceSort.end(), best.begin(), best.end());
+	// 	spaceSort.insert(spaceSort.end(), normal.begin(), normal.end());
+	// 	spaceSort.insert(spaceSort.end(), bad.begin(), bad.end());
+	// }
+
 	void create_space(const board &state, board::piece_type whoFirst, std::vector<action::place> &spaceSort)
 	{
-		std::vector<action::place> best;
-		std::vector<action::place> normal;
-		std::vector<action::place> bad;
+		// std::vector<action::place> best;
+		// std::vector<action::place> normal;
+		// std::vector<action::place> bad;
 		for (int x = 0; x < board::size_x; x++)
 		{
 			for (int y = 0; y < board::size_y; y++)
 			{
-				int liberty = get_liberty(state, x, y);
-				if (liberty == 4)
-					spaceSort.emplace_back(action::place(x, y, whoFirst));
-				else if (liberty == 3)
-					best.emplace_back(action::place(x, y, whoFirst));
-				else if (liberty == 2)
-					normal.emplace_back(action::place(x, y, whoFirst));
-				else
-					bad.emplace_back(action::place(x, y, whoFirst));
+				spaceSort.emplace_back(action::place(x, y, whoFirst));
+				// int liberty = get_liberty(state, x, y);
+				// if (liberty == 4)
+				// 	spaceSort.emplace_back(action::place(x, y, whoFirst));
+				// else if (liberty == 3)
+				// 	best.emplace_back(action::place(x, y, whoFirst));
+				// else if (liberty == 2)
+				// 	normal.emplace_back(action::place(x, y, whoFirst));
+				// else
+					// bad.emplace_back(action::place(x, y, whoFirst));
 			}
 		}
-		std::shuffle(best.begin(), best.end(), engine);
-		std::shuffle(normal.begin(), normal.end(), engine);
-		std::shuffle(bad.begin(), bad.end(), engine);
-		spaceSort.insert(spaceSort.end(), best.begin(), best.end());
-		spaceSort.insert(spaceSort.end(), normal.begin(), normal.end());
-		spaceSort.insert(spaceSort.end(), bad.begin(), bad.end());
+		// std::shuffle(best.begin(), best.end(), engine);
+		// std::shuffle(normal.begin(), normal.end(), engine);
+		// std::shuffle(bad.begin(), bad.end(), engine);
+		// spaceSort.insert(spaceSort.end(), best.begin(), best.end());
+		// spaceSort.insert(spaceSort.end(), normal.begin(), normal.end());
+		// spaceSort.insert(spaceSort.end(), bad.begin(), bad.end());
+		std::shuffle(spaceSort.begin(), spaceSort.end(), engine);
 	}
 
 	int get_liberty(const board &state, int x, int y)
