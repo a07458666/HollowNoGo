@@ -122,6 +122,8 @@ public:
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::black), std::vector<Node *>()));
 			placeMap.insert(std::pair<action::place,std::vector<Node *> >(action::place(i, board::white), std::vector<Node *>()));
 		}
+		root = new Node{0, 0, 0, 0, 0, {}, action::place()};
+		board_bk = board();
 	}
 
 	virtual action take_action(const board &state)
@@ -139,17 +141,10 @@ public:
 		}
 		return action();
 	}
-	virtual void open_episode(const std::string &flag = "") {
-		root = new Node{0, 0, 0, 0, 0, {}, action::place()};
-		std::cout << "start Game" << std::endl;
-	}
-
-	virtual void close_episode(const std::string &flag = "") {
-		deleteTree();
-	}
 
 private:
 	std::vector<action::place> space;
+	board board_bk;
 	board::piece_type who;
 	Node *root;
 	std::map <action::place, std::vector<Node *> > placeMap; 
@@ -160,10 +155,8 @@ private:
 		else
 			return PloyType::randomPloy;
 	}
-	
 
 	int timeLimit() const { return std::stoi(property("T")); }
-	int testFlag() const { return std::stoi(property("Test")); }
 
 	action random_action(const board &state)
 	{
@@ -291,6 +284,7 @@ private:
 				Q_rave = ((float)node->childNodes[i]->value_rave / (float)node->childNodes[i]->nb_rave);
 			}
 			float Q_star = Q * (1.0 - beta) + (Q_rave * beta) + exploration + node->childNodes[i]->h;
+			// std::cout << "Q_star = " << Q_star << ", Q = " << Q << ",(1 - beta) = " << (1 - beta) << ",Q_rave = " << Q_rave << ", (Q_rave * beta) = " << (Q_rave * beta) << ", exploration = " << exploration << std::endl;
 			if (Q_star > max_Q){
 				max_Q = Q_star;
 				max_index = i;
@@ -348,27 +342,10 @@ private:
 			board after = state;
 			if (move.apply(after) == board::legal)
 			{
-				if (testFlag() == 1)
-				{
-					float liberty = get_liberty(state, move.position().x, move.position().y);
-					node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
-				}
-				else if (testFlag() == 2)
-				{
-					node->childNodes.emplace_back(new Node{0, 0, 10, 20, 0, {}, move});
-					placeMap[move].emplace_back(node->childNodes.back());
-				}
-				else if (testFlag() == 3)
-				{
-					float liberty = get_liberty(state, move.position().x, move.position().y);
-					node->childNodes.emplace_back(new Node{0, 0, 10, 20, liberty / (float)8.0, {}, move});
-					placeMap[move].emplace_back(node->childNodes.back());
-				}
-				else
-				{
-					node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
-					placeMap[move].emplace_back(node->childNodes.back());
-				}
+				// float liberty = get_liberty(state, move.position().x, move.position().y);
+				// node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
+				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
 	}
