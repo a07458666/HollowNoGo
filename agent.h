@@ -452,13 +452,13 @@ private:
 	{
 		int liberty = 0;
 		board after = state;
-		if (x < board::size_x - 1 && after[x + 1][y] == board::piece_type::empty)
+		if (x < board::size_x - 1 && (after[x + 1][y] == board::piece_type::empty || after[x + 1][y] == who))
 			liberty++;
-		if (x > 0 && after[x - 1][y] == board::piece_type::empty)
+		if (x > 0 && (after[x - 1][y] == board::piece_type::empty || after[x - 1][y] == who))
 			liberty++;
-		if (y < board::size_y - 1 && after[x][y + 1] == board::piece_type::empty)
+		if (y < board::size_y - 1 && (after[x][y + 1] == board::piece_type::empty || after[x][y + 1] == who))
 			liberty++;
-		if (y > 0 && after[x][y - 1] == board::piece_type::empty)
+		if (y > 0 && (after[x][y - 1] == board::piece_type::empty || after[x][y - 1] == who))
 			liberty++;
 		return liberty;
 	}
