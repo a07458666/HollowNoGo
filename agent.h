@@ -157,6 +157,7 @@ private:
 	}
 
 	int timeLimit() const { return std::stoi(property("T")); }
+	int testId() const { return std::stoi(property("testId")); }
 
 	action random_action(const board &state)
 	{
@@ -344,7 +345,17 @@ private:
 			{
 				// float liberty = get_liberty(state, move.position().x, move.position().y);
 				// node->childNodes.emplace_back(new Node{0, 0, 0, 0, liberty / (float)8.0, {}, move});
-				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				// if (testId() == 0)
+				// {
+				// 	node->childNodes.emplace_back(new Node{0, 0, 10, 20, 0, {}, move});
+				// 	placeMap[move].emplace_back(node->childNodes.back());
+				// }
+				// else
+				// {
+				// 	node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				// 	placeMap[move].emplace_back(node->childNodes.back());
+				// }
+				node->childNodes.emplace_back(new Node{0, 0, 10, 20, 0, {}, move});
 				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
