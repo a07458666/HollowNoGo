@@ -366,7 +366,7 @@ private:
 				}
 				else
 				{
-					node->childNodes.emplace_back(new Node{0, 0, 10, 20, 0, {}, move});
+					node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
 					placeMap[move].emplace_back(node->childNodes.back());
 				}
 			}

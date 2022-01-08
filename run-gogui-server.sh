@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "GoGui-Server Launcher V20211112"
 # command to launch
-player='./nogo --shell --name="andygo" --black="poly=mcts T=1000" --white="poly=mcts T=1000"'
+player='./nogo --shell --name="andygo" --black="poly=mcts T=8000" --white="poly=mcts T=8000"'
 # port for binding
 port=${1:-auto}
 # display mode: states or commands
