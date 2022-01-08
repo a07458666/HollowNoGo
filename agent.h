@@ -207,7 +207,7 @@ private:
 		root = checkIsExist(state, root);
 		create_node_leaf(state, who, root);
 		int times_count = 0;
-		int simulation_count = 100000;
+		int simulation_count = 900000;
 		hclock::time_point start_time = hclock::now();
 		hclock::time_point end_time = start_time;
 		// std::cout << "===timeLimit===" << std::chrono::milliseconds(timeLimit()).count() << std::endl;
@@ -216,9 +216,9 @@ private:
 		// allTime["create_node_leaf"] = 0;
 		// allTime["updateVlaue"] = 0;
 		// allTime["updateVlaueRAVE"] = 0;
-		initMap();
 		do
 		{
+			initMap();
 			playOneSequence(state, root);
 			times_count++;
 			end_time = hclock::now();
@@ -258,6 +258,7 @@ private:
 		int index = 0;
 		board after = state;
 		board::piece_type currentWho = who;
+		// hclock::time_point start_time = hclock::now();
 		while (nodePath.back()->childNodes.size() != 0)
 		{
 			nodePath.emplace_back(descendByUCB1(after, nodePath.back()));
