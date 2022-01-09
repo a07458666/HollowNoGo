@@ -401,22 +401,12 @@ private:
 	//
 	void play_game_by_policy(const board &state, board::piece_type whoFirst, Node *node)
 	{
-		// if (testId() == 1)
-		// {
-		// 	board::piece_type whoWin = play(state, whoFirst);
-		// 	if (whoWin == who)
-		// 		node->value = 1;
-		// 	else
-		// 		node->value = 0;
-		// 	node->nb = 1;
-		// }
-		// else
-		// {
-		float dq = diffQ(state, whoFirst);
-		node->value = dq;
+		board::piece_type whoWin = play(state, whoFirst);
+		if (whoWin == who)
+			node->value = 1;
+		else
+			node->value = 0;
 		node->nb = 1;
-		// }
-		
 	}
 
 	board::piece_type play(const board &state, board::piece_type whoFirst)
@@ -462,26 +452,6 @@ private:
 		else
 			whoRound = p1;
 		return whoRound;
-	}
-
-	float diffQ(const board &state, board::piece_type whoFirst)
-	{
-		board::piece_type whoRound = whoFirst;
-		board after = state;
-		action::place move;
-
-		std::vector<action::place> spaceA, spaceB;
-		board::piece_type p1 = whoFirst;
-		board::piece_type p2 = board::black;
-		if (p1 == board::black)
-		{
-			p2 = board::white;
-		}
-		create_space(state, p1, spaceA);
-		create_space(state, p2, spaceB);
-		double As = spaceA.size();
-		double Bs = spaceB.size();
-		return tanh((As - Bs) / (As + Bs));
 	}
 
 	void create_space(const board &state, board::piece_type whoFirst, std::vector<action::place> &spaceSort)
