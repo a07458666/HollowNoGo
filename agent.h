@@ -32,9 +32,9 @@ enum PloyType
 struct Node
 {
 	int nb;
-	int value;
+	float value;
 	int nb_rave;
-	int value_rave;
+	float value_rave;
 	float h;
 	std::vector<Node *> childNodes;
 	action::place selectPlace;
@@ -216,9 +216,9 @@ private:
 		// allTime["create_node_leaf"] = 0;
 		// allTime["updateVlaue"] = 0;
 		// allTime["updateVlaueRAVE"] = 0;
+		initMap();
 		do
 		{
-			initMap();
 			playOneSequence(state, root);
 			times_count++;
 			end_time = hclock::now();
@@ -392,7 +392,7 @@ private:
 				// float liberty = get_liberty(state, move.position().x, move.position().y);
 				// node->childNodes.emplace_back(new Node{0, 0, 10, 20, ((float)4.0 - liberty) / (float)8.0, {}, move});
 
-				node->childNodes.emplace_back(new Node{0, 0, 0, 0, 0, {}, move});
+				node->childNodes.emplace_back(new Node{0, 0, 20, 10, 0, {}, move});
 				placeMap[move].emplace_back(node->childNodes.back());
 			}
 		}
@@ -401,12 +401,22 @@ private:
 	//
 	void play_game_by_policy(const board &state, board::piece_type whoFirst, Node *node)
 	{
-		board::piece_type whoWin = play(state, whoFirst);
-		if (whoWin == who)
-			node->value = 1;
-		else
-			node->value = 0;
+		// if (testId() == 1)
+		// {
+		// 	board::piece_type whoWin = play(state, whoFirst);
+		// 	if (whoWin == who)
+		// 		node->value = 1;
+		// 	else
+		// 		node->value = 0;
+		// 	node->nb = 1;
+		// }
+		// else
+		// {
+		float dq = diffQ(state, whoFirst);
+		node->value = dq;
 		node->nb = 1;
+		// }
+		
 	}
 
 	board::piece_type play(const board &state, board::piece_type whoFirst)
@@ -454,6 +464,25 @@ private:
 		return whoRound;
 	}
 
+	float diffQ(const board &state, board::piece_type whoFirst)
+	{
+		board::piece_type whoRound = whoFirst;
+		board after = state;
+		action::place move;
+
+		std::vector<action::place> spaceA, spaceB;
+		board::piece_type p1 = whoFirst;
+		board::piece_type p2 = board::black;
+		if (p1 == board::black)
+		{
+			p2 = board::white;
+		}
+		create_space(state, p1, spaceA);
+		create_space(state, p2, spaceB);
+		double As = spaceA.size();
+		double Bs = spaceB.size();
+		return tanh((As - Bs) / (As + Bs));
+	}
 
 	void create_space(const board &state, board::piece_type whoFirst, std::vector<action::place> &spaceSort)
 	{
